@@ -1,4 +1,4 @@
-var mongo = require('mongodb');
+var mongo = require('mongodb').MongoClient;
 var discord = require('discord.js');
 var express = require('express');
 var moment = require('moment-timezone');
@@ -10,14 +10,7 @@ var cm = config.mongodb;
 var mongoUrl = "mongodb://" + cm.username + ":" + cm.password + "@" + cm.host + ":" + cm.port + "/" + cm.database;
 var bot = new discord.Client();
 
-var commands = {
-    "!quit": function(db, author, msg, callback) {
-        callback("Discord Log bot is disconnecting...");
-        bot.logout();
-        db.close();
-        process.exit();
-    }
-};
+var commands = require('./modules/commands.js');
 
 var hooks = {
     log: function(db, data) {
@@ -74,7 +67,7 @@ mongo.connect(mongoUrl, function(err, db) {
                 var cmd = msg.split(' ')[0];
                 var author = message.author;
                 if(commands[cmd]) {
-                    commands[cmd](db, author, msg, function(result) {
+                    commands[cmd](db, bot, author, msg, function(result) {
                         bot.sendMessage(author.id, result, { tts: false }, function(error, message) {
                             if(error) {
                                 hooks.log(db, {
