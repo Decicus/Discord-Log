@@ -16,6 +16,7 @@ config.mongodb = {
     password: "123",
     database: "discordlog",
     collections: {
+        channels: "channels",
         logs: "logs",
         messages: "messages"
     }

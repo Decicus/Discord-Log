@@ -62,8 +62,8 @@ mongo.connect(mongoUrl, function(err, db) {
     });
 
     bot.on("message", function(message) {
+        var msg = message.content;
         if(message.channel && message.channel.server && servers.indexOf(message.channel.server.id) > -1) {
-            var msg = message.content;
             var user = message.author; // .username + .id
             var channel = message.channel; // .name + .id
             var server = message.channel.server;
@@ -96,7 +96,6 @@ mongo.connect(mongoUrl, function(err, db) {
             hooks.addMessage(db, msgData);
         } else {
             if(admins.indexOf(message.author.id) > -1) {
-                var msg = message.content;
                 var cmd = msg.split(' ')[0];
                 var author = message.author;
                 if(commands[cmd]) {
