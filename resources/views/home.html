@@ -4,20 +4,26 @@
 
 {% block main %}
     <div class="jumbotron">
+        {% if message %}
+            <div class="alert alert-danger">
+                {{ message }}
+            </div>
+        {% endif %}
+        
         {% if user %}
             <div class="form-group">
-                <label for="channel"><i class="fa fa-list fa-1x"></i> Channel:</label>
+                <label for="channel"><i class="fa fa-list fa-1x"></i> Server name - Channel name:</label>
                 <select class="form-control" id="channel" onchange="update();">
                     <option selected="">Select channel</option>
-                    {% for key, channel in channels %}
-                        <option value="{{ channel }}">{{ channel }}</option>
+                    {% for id, channel in channels %}
+                        <option value="{{ id }}">{{ channel.server.name }} - {{ channel.name }}</option>
                     {% endfor %}
                 </select>
             </div>
 
             <div class="form-group">
-                <label for="username"><i class="fa fa-search fa-1x"></i> Username:</label>
-                <input type="text" class="form-control" id="username" onchange="update();" />
+                <label for="user_id"><i class="fa fa-search fa-1x"></i> User ID:</label>
+                <input type="text" class="form-control" id="user_id" onchange="update();" />
             </div>
 
             <div class="form-group">
@@ -31,7 +37,7 @@
                     <tr>
                         <th>Date &amp; time (UTC):</th>
                         <th>Message:</th>
-                        <th>Display name:</th>
+                        <th>Discord name:</th>
                     </tr>
                 </thead>
 
@@ -45,8 +51,8 @@
     </div>
 {% endblock %}
 
-{% if user %}
-    {% block scripts %}
+{% block scripts %}
+    {% if user %}
         <script type="text/javascript">
             function htmlEntities(str) {
                 return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -54,7 +60,7 @@
 
             function update() {
                 var channel = $('#channel').val();
-                var username = $('#username').val();
+                var user_id = $('#user_id').val();
                 var limit = parseInt($('#limit').val());
                 $('#messages_body').html("");
 
@@ -62,7 +68,7 @@
                     url: "/api/messages",
                     headers: {
                         channel: channel,
-                        user: (username || ""),
+                        user_id: (user_id || ""),
                         limit: (limit || 50)
                     },
                     dataType: "json",
@@ -70,11 +76,21 @@
                         $('#messages').removeClass('hidden');
                         var messages = data.messages;
                         messages.forEach(function(md) {
-                            $('#messages_body').append('<tr><th>' + md.datetime + '</th><td>' + htmlEntities(md.message) + '</td><td>' + htmlEntities(md.display_name) + '</td></tr>');
+                            var message = htmlEntities(md.message);
+                            if(md.edited) {
+                                message = '<abbr title="Edited">' + message +'</abbr>';
+                            }
+
+                            $('#messages_body').append('<tr><th>' + moment(md.timestamp).utc().format() + '</th><td>' + message + '</td><td><abbr title="Click to copy Discord UID to clipboard" class="discord-uid" data-clipboard-action="copy" data-clipboard-text="' + md.user.id + '">' + htmlEntities(md.user.name + "#" + md.user.discriminator) + '</abbr></td></tr>');
                         });
                     }
                 });
             }
+
+            $(document).ready(function() {
+                var clipboard = new Clipboard('.discord-uid');
+
+            });
         </script>
-    {% endblock %}
-{% endif %}
+    {% endif %}
+{% endblock %}

@@ -21,34 +21,28 @@ hooks.addMessage = function(db, data) {
 hooks.getMessages = function(db, data, callback) {
     var messages = db.collection(cm.collections.messages);
     var channel = data.channel;
-    var messages = db.collection(cm.collections.messages);
     var limit = 50;
 
     var query = {
-        channel: channel
+        "channel.id": channel
     };
 
-    if(data.user) {
-        query.username = data.user.toLowerCase();
+    if(data.user_id && data.user_id !== "") {
+        query["user.id"] = data.user_id;
     }
 
     if(data.limit) {
         limit = (parseInt(data.limit) || limit);
     }
 
-    messages.find(query).sort({$natural: -1}).limit(limit).toArray(function(err, values) {
+    messages.find(query).sort({$natural: -1}).limit(limit).toArray(function(err, msgs) {
         if(err) {
             hooks.log(db, {
                 info: err
             });
             return;
         }
-        var msgs = [];
-        values.forEach(function(message) {
-            delete message._id;
-            delete message.user;
-            msgs.push(message);
-        });
+
         callback({
             count: msgs.length,
             messages: msgs
@@ -120,6 +114,6 @@ hooks.isUser = function(user, callback) {
     } else {
         callback(false);
     }
-}
+};
 
 module.exports = hooks;

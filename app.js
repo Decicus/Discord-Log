@@ -6,7 +6,8 @@ var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var cookieSession = require('cookie-session');
 var mongo = require('mongodb').MongoClient;
-var twitchStrategy = require('passport-twitch').Strategy;
+var twitchPassport = require('passport-twitch');
+var twitchStrategy = twitchPassport.Strategy;
 
 var config = require('./config.js');
 
@@ -65,6 +66,7 @@ mongo.connect(mongoUrl, function(err, db) {
             var msg = message.content;
             var user = message.author; // .username + .id
             var channel = message.channel; // .name + .id
+            var server = message.channel.server;
             var ts = message.timestamp;
             if(message.mentions && message.mentions.length > 0) {
                 message.mentions.forEach(function(user) {
@@ -72,17 +74,26 @@ mongo.connect(mongoUrl, function(err, db) {
                 });
             }
 
-            hooks.addMessage(db, {
-                server_id: message.channel.server.id,
-                server_name: message.channel.server.name,
+            var msgData = {
                 message: msg,
-                user_name: user.username,
-                user_id: user.id,
-                channel_name: channel.name,
-                channel_id: channel.id,
+                server: {
+                    id: server.id,
+                    name: server.name
+                },
+                user: {
+                    name: user.username,
+                    discriminator: user.discriminator,
+                    id: user.id
+                },
+                channel: {
+                    name: channel.name,
+                    id: channel.id
+                },
                 timestamp: ts,
                 edited: false
-            });
+            };
+
+            hooks.addMessage(db, msgData);
         } else {
             if(admins.indexOf(message.author.id) > -1) {
                 var msg = message.content;
@@ -114,6 +125,7 @@ mongo.connect(mongoUrl, function(err, db) {
             var msg = after.content;
             var user = after.author; // .username + .id
             var channel = after.channel; // .name + .id
+            var server = after.channel.server;
             var ts = after.timestamp;
             if(after.mentions && after.mentions.length > 0) {
                 after.mentions.forEach(function(user) {
@@ -121,15 +133,26 @@ mongo.connect(mongoUrl, function(err, db) {
                 });
             }
 
-            hooks.addMessage(db, {
+            var msgData = {
                 message: msg,
-                user_name: user.username,
-                user_id: user.id,
-                channel_name: channel.name,
-                channel_id: channel.id,
+                server: {
+                    id: server.id,
+                    name: server.name
+                },
+                user: {
+                    name: user.username,
+                    discriminator: user.discriminator,
+                    id: user.id
+                },
+                channel: {
+                    name: channel.name,
+                    id: channel.id
+                },
                 timestamp: ts,
                 edited: true
-            });
+            };
+
+            hooks.addMessage(db, msgData);
         }
     });
 
@@ -214,11 +237,19 @@ mongo.connect(mongoUrl, function(err, db) {
         });
 
         web.get('/', function(req, res) {
-            helpers.render(req, res, "Home");
+            var data = {};
+            if(req.query.message) {
+                data.message = req.query.message;
+            }
+
+            hooks.getChannels(db, function(channels) {
+                data.channels = channels;
+                helpers.render(req, res, "Home", data);
+            });
         });
 
         web.get("/auth/twitch", passport.authenticate("twitch"));
-        web.get("/auth/twitch/callback", passport.authenticate("twitch", { failureRedirect: "/" }), function(req, res) {
+        web.get("/auth/twitch/callback", passport.authenticate("twitch", { failureRedirect: "/?message=Unauthorized" }), function(req, res) {
             res.redirect("/");
         });
 
@@ -229,13 +260,13 @@ mongo.connect(mongoUrl, function(err, db) {
 
         router.get('/messages', function(req, res) {
             var channel = req.get('channel');
-            var user = (req.get('user') || null);
+            var user_id = (req.get('user_id') || null);
             var limit = (parseInt(req.get('limit')) || 50);
 
             if(channel) {
                 hooks.getMessages(db, {
                     channel: channel,
-                    user: user,
+                    user_id: user_id,
                     limit: limit
                 },
                 function(data) {
@@ -247,6 +278,12 @@ mongo.connect(mongoUrl, function(err, db) {
                     error: "Missing channel name"
                 }, 403);
             }
+        });
+
+        router.get('/channels', function(req, res) {
+            hooks.getChannels(db, function(channels) {
+                helpers.json(req, res, channels);
+            });
         });
 
         router.get('/', function(req, res) {
