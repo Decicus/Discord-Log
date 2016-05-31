@@ -120,7 +120,7 @@ mongo.connect(mongoUrl, function(err, db) {
     });
 
     bot.on("messageUpdated", function(before, after){
-        if(after.channel && after.channel.server && config.discord.servers.indexOf(after.channel.server.id) > -1) {
+        if(after.channel && after.channel.server && config.discord.servers.indexOf(after.channel.server.id) > -1 && after.timestamp) {
             var msg = after.content;
             var user = after.author; // .username + .id
             var channel = after.channel; // .name + .id
