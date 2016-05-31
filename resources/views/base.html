@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Discord Log - {% block page %}{% endblock %}</title>
+
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/static/css/darkly.min.css">
+        <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+        <link rel="stylesheet" href="/static/css/custom.css">
+    </head>
+    <body>
+        <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a href="/" class="navbar-brand">Discord Log</a>
+                </div>
+
+                <ul class="nav navbar-nav">
+                    <li {% if page === 'Home' %}class="active"{% endif %}><a href="/"><i class="fa fa-home fa-1x"></i> Home</a></li>
+                </ul>
+
+                <ul class="nav navbar-nav navbar-right">
+                    {% if user %}
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-default navbar-btn dropdown-toggle" id="accountDropdown" data-toggle="dropdown" aria-expanded="true"><i class="fa fa-user fa-1x"></i> {{ user.displayName }} <span class="caret"></span></button>
+                            <ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="accountDropdown">
+                                <li role="presentation"><a role="menuitem" href="/auth/logout"><i class="fa fa-sign-out fa-1x"></i> Log out</a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <li><a href="/auth/twitch"><i class="fa fa-twitch fa-1x"></i> Connect with Twitch</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+
+        <div class="container-fluid">
+            <div class="page-header">
+                <h1>Discord Log - {% block page %}{% endblock %}</h1>
+            </div>
+            {% block main %}{% endblock %}
+        </div>
+
+        <script src="/static/js/jquery-1.12.4.min.js" charset="utf-8"></script>
+        <script src="/static/js/bootstrap.min.js" charset="utf-8"></script>
+        {% block scripts %}{% endblock %}
+    </body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "discord-log",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Logs Discord chats",
   "main": "app.js",
   "scripts": {
@@ -9,10 +9,16 @@
   "author": "Alex Thomassen",
   "license": "MIT",
   "dependencies": {
+    "body-parser": "^1.15.1",
+    "cookie-parser": "^1.4.3",
+    "cookie-session": "^2.0.0-alpha.1",
     "discord.js": "^7.0.1",
     "express": "^4.13.4",
     "moment-timezone": "^0.5.4",
-    "mongodb": "^2.1.18"
+    "mongodb": "^2.1.18",
+    "passport": "^0.3.2",
+    "passport-twitch": "^1.0.2",
+    "swig": "^1.4.2"
   },
   "repository": "git@github.com:Decicus/Discord-Log.git"
 }

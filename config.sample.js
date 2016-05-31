@@ -8,6 +8,7 @@ config.discord = {
     servers: [''] // IDs of servers to log, leave empty for all of them
 };
 
+// MongoDB database information
 config.mongodb = {
     host: "127.0.0.1",
     port: "27017",
@@ -18,6 +19,23 @@ config.mongodb = {
         logs: "logs",
         messages: "messages"
     }
+};
+
+// Twitch application information
+config.twitch = {
+    clientID: "",
+    clientSecret: "",
+    callbackURL: "http://localhost:8888/auth/twitch/callback",
+    scope: ""
+};
+
+// Twitch usernames allowed to view logs - keep them lowercase
+config.users = [];
+
+// Configuration for web interface
+config.express = {
+    enabled: false,
+    port: 8888
 };
 
 module.exports = config;

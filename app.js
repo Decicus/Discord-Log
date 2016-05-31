@@ -1,8 +1,15 @@
-var mongo = require('mongodb').MongoClient;
 var discord = require('discord.js');
 var express = require('express');
-var moment = require('moment-timezone');
+var swig = require('swig');
+var passport = require('passport');
+var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
+var cookieSession = require('cookie-session');
+var mongo = require('mongodb').MongoClient;
+var twitchStrategy = require('passport-twitch').Strategy;
+
 var config = require('./config.js');
+
 var admins = config.discord.admins;
 var servers = config.discord.servers;
 
@@ -11,20 +18,8 @@ var mongoUrl = "mongodb://" + cm.username + ":" + cm.password + "@" + cm.host + 
 var bot = new discord.Client();
 
 var commands = require('./modules/commands.js');
-
-var hooks = {
-    log: function(db, data) {
-        var log = db.collection(cm.collections.logs);
-        data.datetime = moment().utc().format();
-        log.insert(data);
-        console.log("[" + data.datetime + "] " + data.info);
-    },
-    addMessage: function(db, data) {
-        var messages = db.collection(cm.collections.messages);
-        data.datetime = moment().utc().format();
-        messages.insert(data);
-    }
-};
+var hooks = require('./modules/hooks.js');
+var web = express();
 
 mongo.connect(mongoUrl, function(err, db) {
     if(err) {
@@ -35,6 +30,33 @@ mongo.connect(mongoUrl, function(err, db) {
     bot.on("ready", function() {
         hooks.log(db, {
             info: "Bot initialized"
+        });
+
+        var channels = {};
+        hooks.getChannels(db, function(allChannels) {
+            channels = allChannels;
+            bot.channels.forEach(function(channel) {
+                if(channel.type === "text") {
+                    var server_id = channel.server.id;
+                    var server_name = channel.server.name;
+                    var channel_id = channel.id;
+                    var channel_name = channel.name;
+                    if(!channels[channel_id]) {
+                        channels[channel_id] = {
+                            server: {
+                                id: server_id,
+                                name: server_name
+                            },
+                            name: channel_name
+                        };
+                    } else {
+                        if(channels[channel_id].name !== channel_name) {
+                            channels[channel_id].name = channel_name;
+                        }
+                    }
+                }
+            });
+            hooks.updateAllChannels(db, channels);
         });
     });
 
@@ -111,5 +133,136 @@ mongo.connect(mongoUrl, function(err, db) {
         }
     });
 
+    bot.on("channelCreated", function(channel) {
+        if(channel.server && channel.type === "text") {
+            hooks.addChannel(db, {
+                server: {
+                    id: channel.server.id,
+                    name: channel.server.name
+                },
+                name: channel.name,
+                id: channel.id
+            });
+        }
+    });
+
     bot.loginWithToken(config.discord.token);
+
+    var helpers = {
+        render: function(req, res, page, data) {
+            if(!data) {
+                data = {};
+            }
+
+            if(req.session && req.session.passport && req.session.passport.user) {
+                data.user = req.session.passport.user;
+            }
+
+            data.page = page;
+            res.render(page.toLowerCase(), data);
+        },
+        json: function(req, res, data, code) {
+            if(!code) {
+                code = 200;
+            }
+
+            res.status(code).json(data);
+        }
+    };
+
+    if(config.express.enabled) {
+        var webport = (config.express.port || 8888);
+
+        web.engine('html', swig.renderFile);
+        web.set('view engine', 'html');
+        web.set('views', __dirname + '/resources/views');
+
+        web.use('/static', express.static(__dirname + '/resources/static'));
+        web.use(bodyParser.urlencoded({ extended: true }));
+        web.use(cookieParser());
+        web.use(cookieSession({secret: config.twitch.clientSecret}));
+        web.use(passport.initialize());
+        web.use(passport.session());
+
+        var router = express.Router();
+        router.use(function(req, res, next) {
+            if(!req.session || !req.session.passport || !req.session.passport.user) {
+                res.redirect("/");
+                return;
+            }
+            next();
+        });
+
+        passport.use(new twitchStrategy(config.twitch,
+            function(access_token, refresh_token, profile, done) {
+                hooks.isUser(profile.username, function(isUser) {
+                    if(!isUser) {
+                        return done(null, false);
+                    }
+
+                    return done(null, profile);
+                });
+            }
+        ));
+
+        passport.serializeUser(function(profile, done) {
+            done(null, profile);
+        });
+
+        passport.deserializeUser(function(profile, done) {
+            done(null, profile);
+        });
+
+        web.get('/', function(req, res) {
+            helpers.render(req, res, "Home");
+        });
+
+        web.get("/auth/twitch", passport.authenticate("twitch"));
+        web.get("/auth/twitch/callback", passport.authenticate("twitch", { failureRedirect: "/" }), function(req, res) {
+            res.redirect("/");
+        });
+
+        web.get("/auth/logout", function(req, res) {
+            req.logout();
+            res.redirect("/");
+        });
+
+        router.get('/messages', function(req, res) {
+            var channel = req.get('channel');
+            var user = (req.get('user') || null);
+            var limit = (parseInt(req.get('limit')) || 50);
+
+            if(channel) {
+                hooks.getMessages(db, {
+                    channel: channel,
+                    user: user,
+                    limit: limit
+                },
+                function(data) {
+                    helpers.json(req, res, data);
+                });
+            } else {
+                helpers.json(req, res, {
+                    status: 403,
+                    error: "Missing channel name"
+                }, 403);
+            }
+        });
+
+        router.get('/', function(req, res) {
+            helpers.json(req, res, {
+                status: 404,
+                error: "404 not found"
+            }, 404);
+        });
+
+        web.use('/api', router);
+        web.get('*', function(req, res) {
+            helpers.render(req, res, "404", {});
+        });
+
+        web.listen(webport, function() {
+            hooks.log(db, {info: "Discord Log's web interface listening on port: " + webport});
+        });
+    }
 });
