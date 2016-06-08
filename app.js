@@ -45,17 +45,19 @@ mongo.connect(mongoUrl, function(err, db) {
                     var server_name = channel.server.name;
                     var channel_id = channel.id;
                     var channel_name = channel.name;
-                    if(!channels[channel_id]) {
-                        channels[channel_id] = {
-                            server: {
-                                id: server_id,
-                                name: server_name
-                            },
-                            name: channel_name
-                        };
-                    } else {
-                        if(channels[channel_id].name !== channel_name) {
-                            channels[channel_id].name = channel_name;
+                    if(servers.indexOf(server_id) > -1) {
+                        if(!channels[channel_id]) {
+                            channels[channel_id] = {
+                                server: {
+                                    id: server_id,
+                                    name: server_name
+                                },
+                                name: channel_name
+                            };
+                        } else {
+                            if(channels[channel_id].name !== channel_name) {
+                                channels[channel_id].name = channel_name;
+                            }
                         }
                     }
                 }
@@ -156,7 +158,7 @@ mongo.connect(mongoUrl, function(err, db) {
     });
 
     bot.on("messageUpdated", function(before, after){
-        if(after.channel && after.channel.server && config.discord.servers.indexOf(after.channel.server.id) > -1 && after.timestamp) {
+        if(after.channel && after.channel.server && servers.indexOf(after.channel.server.id) > -1 && after.timestamp) {
             var msg = after.content;
             var user = after.author; // .username + .id
             var channel = after.channel; // .name + .id
@@ -201,7 +203,7 @@ mongo.connect(mongoUrl, function(err, db) {
     });
 
     bot.on("channelCreated", function(channel) {
-        if(channel.server && channel.type === "text") {
+        if(channel.server && channel.type === "text" && servers.indexOf(channel.server.id) > -1) {
             hooks.addChannel(db, {
                 server: {
                     id: channel.server.id,
@@ -222,7 +224,7 @@ mongo.connect(mongoUrl, function(err, db) {
     });
 
     bot.on("channelUpdated", function(old, channel) {
-        if(channel.server && channel.type === "text") {
+        if(channel.server && channel.type === "text" && servers.indexOf(channel.server.id) > -1) {
             hooks.updateChannel(db, {
                 name: channel.name,
                 id: channel.id
