@@ -116,4 +116,47 @@ hooks.isUser = function(user, callback) {
     }
 };
 
+
+var regexes = {
+    channel: /<#(\d+)>/g,
+    nickname: /<@!(\d+)>/g,
+    role: /<@&(\d+)>/g
+};
+
+hooks.checkIds = function(data, callback) {
+    var msg = data.message;
+    var channels = msg.match(regexes.channel);
+    if(channels) {
+        channels.forEach(function(mention) {
+            id = mention.match(/\d+/)[0];
+            if(id && data.channels[id]) {
+                msg = msg.replace(mention, "#" + data.channels[id].name);
+            }
+        });
+    }
+
+    var nicknames = msg.match(regexes.nickname);
+    if(nicknames) {
+        nicknames.forEach(function(mention) {
+            id = mention.match(/\d+/)[0];
+            if(id && data.users[id]) {
+                var user = data.users[id];
+                msg = msg.replace(mention, "@" + user.name + "#" + user.discriminator);
+            }
+        });
+    }
+
+    var roles = msg.match(regexes.role);
+    if(roles) {
+        roles.forEach(function(mention) {
+            id = mention.match(/\d+/)[0];
+            if(id && data.roles[data.server][id]) {
+                msg = msg.replace(mention, "@" + data.roles[data.server][id].name);
+            }
+        });
+    }
+
+    callback(msg);
+};
+
 module.exports = hooks;

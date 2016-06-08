@@ -9,7 +9,7 @@
                 {{ message }}
             </div>
         {% endif %}
-        
+
         {% if user %}
             <div class="form-group">
                 <label for="channel"><i class="fa fa-list fa-1x"></i> Server name - Channel name:</label>
@@ -58,6 +58,10 @@
                 return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
 
+            function nl2br(str) {
+                return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1' + '<br>' + '$2');
+            }
+
             function update() {
                 var channel = $('#channel').val();
                 var user_id = $('#user_id').val();
@@ -80,6 +84,8 @@
                             if(md.edited) {
                                 message = '<abbr title="Edited">' + message +'</abbr>';
                             }
+
+                            message = nl2br(message);
 
                             $('#messages_body').append('<tr><th>' + moment(md.timestamp).utc().format() + '</th><td>' + message + '</td><td><abbr title="Click to copy Discord UID to clipboard" class="discord-uid" data-clipboard-action="copy" data-clipboard-text="' + md.user.id + '">' + htmlEntities(md.user.name + "#" + md.user.discriminator) + '</abbr></td></tr>');
                         });

@@ -22,6 +22,10 @@ var commands = require('./modules/commands.js');
 var hooks = require('./modules/hooks.js');
 var web = express();
 
+var channels = {};
+var roles = {};
+var users = {};
+
 mongo.connect(mongoUrl, function(err, db) {
     if(err) {
         console.log(err);
@@ -33,7 +37,6 @@ mongo.connect(mongoUrl, function(err, db) {
             info: "Bot initialized"
         });
 
-        var channels = {};
         hooks.getChannels(db, function(allChannels) {
             channels = allChannels;
             bot.channels.forEach(function(channel) {
@@ -58,6 +61,29 @@ mongo.connect(mongoUrl, function(err, db) {
                 }
             });
             hooks.updateAllChannels(db, channels);
+        });
+
+        bot.servers.forEach(function(server) {
+            server.roles.forEach(function(role) {
+                if(!roles[server.id]) {
+                    roles[server.id] = {};
+                }
+
+                roles[server.id][role.id] = {
+                    name: role.name
+                };
+
+                hooks.log(db, {
+                    info: "Updated role: " + role.name + " (" + role.id + ")"
+                });
+            });
+        });
+
+        bot.users.forEach(function(user) {
+            users[user.id] = {
+                name: user.name,
+                discriminator: user.discriminator
+            };
         });
     });
 
@@ -93,7 +119,17 @@ mongo.connect(mongoUrl, function(err, db) {
                 edited: false
             };
 
-            hooks.addMessage(db, msgData);
+            hooks.checkIds({
+                server: server.id,
+                message: msg,
+                channels: channels,
+                roles: roles,
+                users: users
+            }, function(msg) {
+                msgData.message = msg;
+                hooks.addMessage(db, msgData);
+            });
+
         } else {
             if(admins.indexOf(message.author.id) > -1) {
                 var cmd = msg.split(' ')[0];
