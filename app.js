@@ -187,7 +187,16 @@ mongo.connect(mongoUrl, function(err, db) {
                 edited: true
             };
 
-            hooks.addMessage(db, msgData);
+            hooks.checkIds({
+                server: server.id,
+                message: msg,
+                channels: channels,
+                roles: roles,
+                users: users
+            }, function(msg) {
+                msgData.message = msg;
+                hooks.addMessage(db, msgData);
+            });
         }
     });
 
@@ -202,6 +211,15 @@ mongo.connect(mongoUrl, function(err, db) {
                 id: channel.id
             });
         }
+    });
+
+    bot.on("serverRoleCreated", function(role) {
+        if(!roles[role.server.id]) {
+            roles[role.server.id] = {};
+        }
+        roles[role.server.id][role.id] = {
+            name: role.name
+        };
     });
 
     bot.loginWithToken(config.discord.token);
