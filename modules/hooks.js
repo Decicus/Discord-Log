@@ -86,6 +86,20 @@ hooks.addChannel = function(db, data) {
     }
 };
 
+hooks.updateChannel = function(db, data) {
+    var channels = db.collection(cm.collections.channels);
+    if(data.id) {
+        channels.update({
+            id: data.id
+        }, {
+            name: data.name
+        });
+        hooks.log(db, {
+            info: "Discord channel updated: " + data.name + " (" + data.id + ")"
+        });
+    }
+};
+
 hooks.getChannels = function(db, callback) {
     var channels = db.collection(cm.collections.channels);
     channels.find().toArray(function(err, allChannels) {

@@ -210,6 +210,31 @@ mongo.connect(mongoUrl, function(err, db) {
                 name: channel.name,
                 id: channel.id
             });
+
+            channels[channel.id] = {
+                server: {
+                    id: channel.server.id,
+                    name: channel.server.name
+                },
+                name: channel.name
+            };
+        }
+    });
+
+    bot.on("channelUpdated", function(channel) {
+        if(channel.server && channel.type === "text") {
+            hooks.updateChannel(db, {
+                name: channel.name,
+                id: channel.id
+            });
+
+            channels[channel.id] = {
+                server: {
+                    id: channel.server.id,
+                    name: channel.server.name
+                },
+                name: channel.name
+            };
         }
     });
 
@@ -217,9 +242,24 @@ mongo.connect(mongoUrl, function(err, db) {
         if(!roles[role.server.id]) {
             roles[role.server.id] = {};
         }
+        
         roles[role.server.id][role.id] = {
             name: role.name
         };
+
+        hooks.log(db, {
+            info: "Server role created: " + role.name + " (" + role.server.name + ")"
+        });
+    });
+
+    bot.on("serverRoleUpdated", function(role) {
+        roles[role.server.id][role.id] = {
+            name: role.name
+        };
+
+        hooks.log(db, {
+            info: "Server role updated: " + role.name + " (" + role.server.name + ")"
+        });
     });
 
     bot.loginWithToken(config.discord.token);
