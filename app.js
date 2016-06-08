@@ -221,7 +221,7 @@ mongo.connect(mongoUrl, function(err, db) {
         }
     });
 
-    bot.on("channelUpdated", function(channel) {
+    bot.on("channelUpdated", function(old, channel) {
         if(channel.server && channel.type === "text") {
             hooks.updateChannel(db, {
                 name: channel.name,
@@ -242,7 +242,7 @@ mongo.connect(mongoUrl, function(err, db) {
         if(!roles[role.server.id]) {
             roles[role.server.id] = {};
         }
-        
+
         roles[role.server.id][role.id] = {
             name: role.name
         };
@@ -252,7 +252,7 @@ mongo.connect(mongoUrl, function(err, db) {
         });
     });
 
-    bot.on("serverRoleUpdated", function(role) {
+    bot.on("serverRoleUpdated", function(old, role) {
         roles[role.server.id][role.id] = {
             name: role.name
         };
