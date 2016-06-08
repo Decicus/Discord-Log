@@ -147,7 +147,7 @@ hooks.checkIds = function(data, callback) {
         channels.forEach(function(mention) {
             id = mention.match(/\d+/)[0];
             if(id && data.channels[id]) {
-                msg = msg.replace(mention, "#" + data.channels[id].name);
+                msg = msg.replace(mention, "<#" + data.channels[id].name + ">");
             }
         });
     }
@@ -168,7 +168,7 @@ hooks.checkIds = function(data, callback) {
         roles.forEach(function(mention) {
             id = mention.match(/\d+/)[0];
             if(id && data.roles[data.server][id]) {
-                msg = msg.replace(mention, "@" + data.roles[data.server][id].name);
+                msg = msg.replace(mention, "<@" + data.roles[data.server][id].name + ">");
             }
         });
     }
