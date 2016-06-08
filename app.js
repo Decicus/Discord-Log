@@ -96,7 +96,7 @@ mongo.connect(mongoUrl, function(err, db) {
             var ts = message.timestamp;
             if(message.mentions && message.mentions.length > 0) {
                 message.mentions.forEach(function(user) {
-                    msg = msg.replace(user.id, user.username + " [" + user.id + "]");
+                    msg = msg.replace(user.id, user.username + "#" + user.discriminator + " [" + user.id + "]");
                 });
             }
 
@@ -164,7 +164,7 @@ mongo.connect(mongoUrl, function(err, db) {
             var ts = after.timestamp;
             if(after.mentions && after.mentions.length > 0) {
                 after.mentions.forEach(function(user) {
-                    msg = msg.replace(user.id, user.username + " [" + user.id + "]");
+                    msg = msg.replace(user.id, user.username + "#" + user.discriminator + " [" + user.id + "]");
                 });
             }
 

@@ -89,11 +89,14 @@ hooks.addChannel = function(db, data) {
 hooks.updateChannel = function(db, data) {
     var channels = db.collection(cm.collections.channels);
     if(data.id) {
-        channels.update({
+        channels.findOneAndUpdate({
             id: data.id
         }, {
-            name: data.name
+            "$set": {
+                name: data.name
+            }
         });
+
         hooks.log(db, {
             info: "Discord channel updated: " + data.name + " (" + data.id + ")"
         });
@@ -155,7 +158,7 @@ hooks.checkIds = function(data, callback) {
             id = mention.match(/\d+/)[0];
             if(id && data.users[id]) {
                 var user = data.users[id];
-                msg = msg.replace(mention, "@" + user.name + "#" + user.discriminator);
+                msg = msg.replace(mention, "<@" + user.name + "#" + user.discriminator + " [" + id + "]>");
             }
         });
     }
