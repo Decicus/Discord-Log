@@ -16,7 +16,9 @@ var servers = config.discord.servers;
 
 var cm = config.mongodb;
 var mongoUrl = "mongodb://" + cm.username + ":" + cm.password + "@" + cm.host + ":" + cm.port + "/" + cm.database;
-var bot = new discord.Client();
+var bot = new discord.Client({
+    autoReconnect: true
+});
 
 var commands = require('./modules/commands.js');
 var hooks = require('./modules/hooks.js');
@@ -31,6 +33,12 @@ mongo.connect(mongoUrl, function(err, db) {
         console.log(err);
         return;
     }
+
+    bot.on("disconnected", function() {
+        hooks.log(db, {
+            info: "Disconnected from Discord"
+        });
+    });
 
     bot.on("ready", function() {
         hooks.log(db, {
@@ -138,7 +146,8 @@ mongo.connect(mongoUrl, function(err, db) {
                 var author = message.author;
                 if(commands[cmd]) {
                     commands[cmd](db, bot, author, msg, function(result) {
-                        bot.sendMessage(author.id, result, { tts: false }, function(error, message) {
+                        var msg = result.message;
+                        bot.sendMessage(author.id, msg, { tts: false }, function(error, message) {
                             if(error) {
                                 hooks.log(db, {
                                     info: error
@@ -149,7 +158,7 @@ mongo.connect(mongoUrl, function(err, db) {
                         hooks.log(db, {
                             user_id: author.id,
                             user_name: author.username,
-                            info: result
+                            data: result
                         });
                     });
                 }
