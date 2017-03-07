@@ -28,6 +28,8 @@ var channels = {};
 var roles = {};
 var users = {};
 
+var channelBlacklist = config.discord.channelBlacklist || [];
+
 mongo.connect(mongoUrl, function(err, db) {
     if(err) {
         console.log(err);
@@ -99,6 +101,11 @@ mongo.connect(mongoUrl, function(err, db) {
 
     bot.on("message", function(message) {
         var msg = message.content;
+
+        if(message.channel && message.channel.id && channelBlacklist.indexOf(message.channel.id) > -1) {
+            return;
+        }
+
         if(message.channel && message.channel.server && servers.indexOf(message.channel.server.id) > -1) {
             var user = message.author; // .username + .id
             var channel = message.channel; // .name + .id
@@ -167,6 +174,10 @@ mongo.connect(mongoUrl, function(err, db) {
     });
 
     bot.on("messageUpdated", function(before, after){
+        if(after.channel && after.channel.id && channelBlacklist.indexOf(after.channel.id) > -1) {
+            return;
+        }
+
         if(after.channel && after.channel.server && servers.indexOf(after.channel.server.id) > -1 && after.timestamp) {
             var msg = after.content;
             var user = after.author; // .username + .id
@@ -212,6 +223,10 @@ mongo.connect(mongoUrl, function(err, db) {
     });
 
     bot.on("channelCreated", function(channel) {
+        if(channel && channel.id && channelBlacklist.indexOf(channel.id) > -1) {
+            return;
+        }
+
         if(channel.server && channel.type === "text" && servers.indexOf(channel.server.id) > -1) {
             hooks.addChannel(db, {
                 server: {
@@ -233,6 +248,10 @@ mongo.connect(mongoUrl, function(err, db) {
     });
 
     bot.on("channelUpdated", function(old, channel) {
+        if(channel && channel.id && channelBlacklist.indexOf(channel.id) > -1) {
+            return;
+        }
+        
         if(channel.server && channel.type === "text" && servers.indexOf(channel.server.id) > -1) {
             hooks.updateChannel(db, {
                 name: channel.name,

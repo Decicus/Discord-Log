@@ -5,7 +5,8 @@ config.discord = {
     client_id: '', // Bot client ID / application ID
     token: '', // Bot token
     admins: [''], // User IDs of users that are allowed to use commands
-    servers: [''] // IDs of servers to log, leave empty for all of them
+    servers: [''], // IDs of servers to log, leave empty for all of them4
+    channelBlacklist: [] // Array of channel _IDs_ to not log messages in.
 };
 
 // MongoDB database information
